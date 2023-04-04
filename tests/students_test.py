@@ -10,6 +10,27 @@ def test_get_assignments_student_1(client, h_student_1):
     for assignment in data:
         assert assignment['student_id'] == 1
 
+def test_get_assignments_student_unauthorized(client, h_teacher_1):
+    response = client.get(
+        '/student/assignments',
+        headers=h_teacher_1
+    )
+
+    assert response.status_code == 403
+    data = response.json
+    assert data['error'] == 'FyleError'
+    assert data['message'] == 'requester should be a student'
+
+def test_get_assignments_student_empty_header(client):
+    response = client.get(
+        '/student/assignments',
+        headers=None
+    )
+
+    assert response.status_code == 401
+    data = response.json
+    assert data['error'] == 'FyleError'
+    assert data['message'] == 'principal not found'
 
 def test_get_assignments_student_2(client, h_student_2):
     response = client.get(
@@ -71,3 +92,17 @@ def test_assingment_resubmitt_error(client, h_student_1):
     assert response.status_code == 400
     assert error_response['error'] == 'FyleError'
     assert error_response["message"] == 'only a draft assignment can be submitted'
+
+def test_submit_assignment_wrong_student(client, h_student_2):
+    response = client.post(
+        '/student/assignments/submit',
+        headers=h_student_2,
+        json={
+            'id': 1,
+            'teacher_id': 1
+        })
+
+    assert response.status_code == 400
+    data = response.json
+    assert data['error'] == 'FyleError'
+    assert data['message'] == 'This assignment belongs to some other student'
